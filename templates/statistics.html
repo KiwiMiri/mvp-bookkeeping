@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>월별 거래 통계</title>
+    <style>
+        body { font-family: 'Pretendard', sans-serif; margin: 40px; }
+        h1 { font-size: 2em; margin-bottom: 20px; }
+        table { border-collapse: collapse; width: 60%; margin-top: 20px; }
+        th, td { border: 1px solid #888; padding: 8px 14px; text-align: right; }
+        th { background: #f0f0f0; }
+        td:first-child, th:first-child { text-align: center; }
+        td:nth-child(2), th:nth-child(2) { text-align: center; }
+        form { margin-bottom: 20px; }
+        select, button { padding: 4px 8px; margin-right: 6px; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <nav style="margin-bottom: 24px;">
+        <a href="{{ url_for('index') }}">📥 거래 입력</a> |
+        <a href="{{ url_for('statistics') }}">📊 거래 통계</a>
+    </nav>
+    <h1>📊 월별 거래 통계</h1>
+    <form method="get">
+        <select name="year">
+            <option value="">연도</option>
+            {% for y in range(2020, 2031) %}
+                <option value="{{ y }}" {% if year==y %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+        </select>
+        <select name="month">
+            <option value="">월</option>
+            {% for m in range(1, 13) %}
+                <option value="{{ m }}" {% if month==m %}selected{% endif %}>{{ m }}</option>
+            {% endfor %}
+        </select>
+        <select name="client">
+            <option value="">거래처</option>
+            {% for c in clients %}
+                <option value="{{ c }}" {% if client==c %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+        </select>
+        <select name="item">
+            <option value="">품목</option>
+            {% for i in items %}
+                <option value="{{ i }}" {% if item==i %}selected{% endif %}>{{ i }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">조회</button>
+    </form>
+    <table>
+        <thead>
+            <tr>
+                <th>연도</th>
+                <th>월</th>
+                <th>공급가액 합계(원)</th>
+                <th>세액 합계(원)</th>
+                <th>총합계(원)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in stats %}
+            <tr>
+                <td>{{ row.year|int }}</td>
+                <td>{{ row.month|int }}</td>
+                <td>{{ "{:,}".format(row.supply_sum or 0) }}</td>
+                <td>{{ "{:,}".format(row.tax_sum or 0) }}</td>
+                <td>{{ "{:,}".format(row.total_sum or 0) }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" style="text-align:center;">통계 데이터가 없습니다.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <a href="{{ url_for('index') }}">← 거래 입력으로 돌아가기</a>
+
+    <h2>📈 월별 거래 추이</h2>
+    <canvas id="monthlyChart" width="600" height="250"></canvas>
+
+    <h2>🥧 품목별 거래 비율</h2>
+    <canvas id="itemPieChart" width="400" height="250"></canvas>
+
+    <script>
+        // 월별 거래 추이 데이터
+        const monthlyLabels = {{ monthly_labels|tojson }};
+        const monthlyData = {{ monthly_data|tojson }};
+
+        // 품목별 비율 데이터
+        const itemLabels = {{ item_labels|tojson }};
+        const itemData = {{ item_data|tojson }};
+
+        const ctx1 = document.getElementById('monthlyChart').getContext('2d');
+        new Chart(ctx1, {
+            type: 'bar',
+            data: {
+                labels: monthlyLabels,
+                datasets: [{
+                    label: '월별 총합계(원)',
+                    data: monthlyData,
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString() + '원';
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) label += ': ';
+                                if (context.parsed.y !== null) {
+                                    label += context.parsed.y.toLocaleString() + '원';
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        const ctx2 = document.getElementById('itemPieChart').getContext('2d');
+        new Chart(ctx2, {
+            type: 'pie',
+            data: {
+                labels: itemLabels,
+                datasets: [{
+                    label: '품목별 비율(원)',
+                    data: itemData,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.5)',
+                        'rgba(54, 162, 235, 0.5)',
+                        'rgba(255, 206, 86, 0.5)',
+                        'rgba(75, 192, 192, 0.5)',
+                        'rgba(153, 102, 255, 0.5)',
+                        'rgba(255, 159, 64, 0.5)'
+                    ]
+                }]
+            },
+            options: {
+                responsive: false,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) label += ': ';
+                                if (context.parsed !== null) {
+                                    label += context.parsed.toLocaleString() + '원';
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

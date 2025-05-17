@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>거래 장부</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 40px;
+            background-color: #f7f9fc;
+            color: #333;
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+        form {
+            margin-bottom: 30px;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        input[type="text"], input[type="number"], input[type="date"] {
+            margin: 10px 10px 10px 0;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 150px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #3498db;
+            border: none;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: center;
+        }
+        th {
+            background-color: #ecf0f1;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+    </style>
+</head>
+<body>
+    <nav style="margin-bottom: 24px;">
+        <a href="{{ url_for('index') }}">📥 거래 입력</a> |
+        <a href="{{ url_for('statistics') }}">📊 거래 통계</a>
+    </nav>
+    <h1>📦 거래 입력</h1>
+    <form method="POST">
+        <input type="date" name="일자" required>
+        <input type="text" name="거래처" placeholder="거래처" required>
+        <input type="text" name="품목" placeholder="품목" required>
+        <input type="number" name="수량" placeholder="수량" required>
+        <input type="number" name="단가" placeholder="단가" required>
+        <button type="submit">추가</button>
+    </form>
+
+    <h2>📋 거래 내역</h2>
+    {% if records %}
+        <table>
+            <thead>
+                <tr>
+                    <th>일자</th>
+                    <th>거래처</th>
+                    <th>품목</th>
+                    <th>수량</th>
+                    <th>단가</th>
+                    <th>공급가액</th>
+                    <th>세액</th>
+                    <th>합계</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in records %}
+                <tr>
+                    <td>{{ r.date }}</td>
+                    <td>{{ r.client }}</td>
+                    <td>{{ r.item }}</td>
+                    <td>{{ r.quantity }}</td>
+                    <td>
+                        {% if r.price %}
+                            {{ '{:,}'.format(r.price) }}원
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if r.supply_price %}
+                            {{ '{:,}'.format(r.supply_price) }}원
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if r.tax %}
+                            {{ '{:,}'.format(r.tax) }}원
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if r.total %}
+                            {{ '{:,}'.format(r.total) }}원
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>거래 내역이 없습니다.</p>
+    {% endif %}
+</body>
+</html>
